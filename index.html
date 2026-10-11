@@ -184,7 +184,8 @@ header p { opacity: 0.85; font-size: 13px; margin-bottom: 10px; position: relati
 
 /* ===== Card ===== */
 .card {
-  padding: 5px 9px;
+  padding: 3px 8px;
+  border: 2px solid transparent;
   border-radius: 7px;
   color: white;
   font-weight: bold;
@@ -203,7 +204,6 @@ header p { opacity: 0.85; font-size: 13px; margin-bottom: 10px; position: relati
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
-.card.type-A.fresh { background: #3182ce; } /* مذاكرة جديدة في آخر أسبوع: ليست متأخرة بعد */
 
 .card .card-actions {
   display: none;
@@ -509,6 +509,26 @@ body.view-mode .add-week-bar,
 body.view-mode .mode-bar,
 body.view-mode .week-del { display: none !important; }
 
+/* ===== Legend ===== */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  justify-content: center;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text2);
+  margin: -5px 0 14px;
+}
+.legend .lg { display: inline-flex; align-items: center; gap: 4px; }
+.legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
   .weeks-grid { grid-template-columns: 1fr; }
@@ -558,6 +578,7 @@ body.view-mode .week-del { display: none !important; }
     <option value="4" selected>4 (A - D)</option>
     <option value="5">5 (A - E)</option>
     <option value="6">6 (A - F)</option>
+    <option value="7">7 (A - G)</option>
   </select>
 
   <label>📚 أسماء المواد (والرمز الذي يظهر على البطاقة)</label>
@@ -586,6 +607,7 @@ body.view-mode .week-del { display: none !important; }
 
   <!-- ===== Filter ===== -->
   <div class="filter-bar" id="filterBar"></div>
+  <div class="legend" id="legend"></div>
 
   <!-- ===== Weeks Grid ===== -->
   <div class="weeks-grid" id="weeksGrid"></div>
@@ -658,8 +680,8 @@ const STORE = {
 };
 
 const DAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-const ALL_TYPES = ['A', 'B', 'C', 'D', 'E', 'F'];
-const TYPE_NAMES = ['المذاكرة الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة'];
+const ALL_TYPES = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+const TYPE_NAMES = ['المذاكرة الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة'];
 
 // ألوان المراحل: من الأحمر (أول مرة) إلى الأخضر (آخر مرة) مهما كان عدد مرات التكرار
 const COL = {
@@ -670,7 +692,11 @@ const COL = {
   teal:   { bg: '#2c9a8f', fg: '#fff',    dot: '🟦' },
   green:  { bg: '#38a169', fg: '#fff',    dot: '🟢' }
 };
+// المرحلة الأولى A: دائرة حمراء مفرغة.
+// باقي المراحل (B وما بعدها): ألوان مصمتة تتدرج من الأحمر إلى الأخضر؛ لذلك الجدول يُقرأ بعدد المراحل بعد A.
+const HOLLOW_RED = '#e53e3e';
 const PALETTES = {
+  1: ['green'],
   2: ['red', 'green'],
   3: ['red', 'yellow', 'green'],
   4: ['red', 'orange', 'yellow', 'green'],
@@ -723,7 +749,7 @@ function sanitizeCfg(c) {
     }));
   if (!subjects.length) return null;
   const numWeeks = Math.min(60, Math.max(1, parseInt(c.numWeeks) || 14));
-  const repeats = Math.min(6, Math.max(2, parseInt(c.repeats) || 4));
+  const repeats = Math.min(7, Math.max(2, parseInt(c.repeats) || 4));
   const nextId = Math.max(parseInt(c.nextId) || 1, ...subjects.map(s => parseInt(s.id.slice(1)) + 1));
   return { numWeeks, repeats, subjects, nextId };
 }
@@ -739,7 +765,8 @@ function applyConfig(m, cfg) {
     MAX_LECTURE = 99;
   } else {
     SCHOOL_SUBJECTS.forEach(([k, n, c]) => { SUBJECTS[k] = n; SUBJECT_CODES[k] = c; });
-    TYPES = ALL_TYPES.slice(0, 4);
+    // الفصل الثاني طويل (17 أسبوعًا) فيحتاج 6 مرات تكرار على الأقل
+    TYPES = ALL_TYPES.slice(0, m === 'school2' ? 6 : 4);
     NUM_WEEKS = (m === 'school2') ? 17 : 13;
     MAX_LECTURE = NUM_WEEKS;
   }
@@ -833,22 +860,36 @@ function startApp(m) {
 }
 
 function buildUi() {
-  // ألوان المراحل حسب عدد مرات التكرار
-  const pal = PALETTES[TYPES.length];
+  // ألوان المراحل: A = دائرة حمراء مفرغة، ثم B... ألوان مصمتة تتدرج إلى الأخضر
+  const pal = PALETTES[TYPES.length - 1];
+  const colorOf = i => COL[pal[i - 1]];
   let css = '';
   TYPES.forEach((t, i) => {
-    const c = COL[pal[i]];
-    css += `.card.type-${t}{background:${c.bg};color:${c.fg};}`;
-    css += `.filter-btn[data-filter="${t}"].active{background:${c.bg};color:${c.fg};}`;
+    if (i === 0) {
+      css += `.card.type-${t}{background:#fff;color:${HOLLOW_RED};border-color:${HOLLOW_RED};border-radius:99px;}`;
+      css += `.filter-btn[data-filter="${t}"].active{background:${HOLLOW_RED};color:#fff;}`;
+    } else {
+      const c = colorOf(i);
+      css += `.card.type-${t}{background:${c.bg};color:${c.fg};}`;
+      css += `.filter-btn[data-filter="${t}"].active{background:${c.bg};color:${c.fg};}`;
+    }
   });
   document.getElementById('typeStyles').textContent = css;
 
   // شريط الفلتر
   let f = `<button class="filter-btn${state.filter === 'all' ? ' active' : ''}" data-filter="all" onclick="setFilter('all')">الكل</button>`;
   TYPES.forEach((t, i) => {
-    f += `<button class="filter-btn${state.filter === t ? ' active' : ''}" data-filter="${t}" onclick="setFilter('${t}')">${COL[pal[i]].dot} ${t} — ${TYPE_NAMES[i]}</button>`;
+    const dot = i === 0 ? '⭕' : colorOf(i).dot;
+    f += `<button class="filter-btn${state.filter === t ? ' active' : ''}" data-filter="${t}" onclick="setFilter('${t}')">${dot} ${t} — ${TYPE_NAMES[i]}</button>`;
   });
   document.getElementById('filterBar').innerHTML = f;
+
+  // دليل الألوان
+  let lg = `<span class="lg"><i style="background:#fff;border-color:${HOLLOW_RED}"></i> ${TYPES[0]} (المرة الأولى)</span>`;
+  TYPES.forEach((t, i) => {
+    if (i > 0) lg += `<span class="lg"><i style="background:${colorOf(i).bg};border-color:${colorOf(i).bg}"></i> ${t}</span>`;
+  });
+  document.getElementById('legend').innerHTML = lg;
 
   // قوائم نافذة الإضافة
   document.getElementById('cardType').innerHTML =
@@ -1203,10 +1244,9 @@ function renderWeeks() {
 }
 
 function createCardHtml(card, weekNum, dayIndex, cardIndex) {
-  const fresh = card.type === TYPES[0] && weekNum === latestWeekUsed;
-  const title = `${SUBJECTS[card.subject] || card.subject} - محاضرة ${card.num} - التكرار ${card.type}${fresh ? ' (جديدة)' : ''}`;
+  const title = `${SUBJECTS[card.subject] || card.subject} - محاضرة ${card.num} - التكرار ${card.type}`;
   return `
-    <div class="card type-${esc(card.type)}${fresh ? ' fresh' : ''}" title="${esc(title)}">
+    <div class="card type-${esc(card.type)}" title="${esc(title)}">
       <span class="card-label">${esc(subjCode(card.subject))}${card.num} ${esc(card.type)}</span>
       <div class="card-actions">
         <button class="card-btn delete"
