@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 نظام بطاقات المذاكرة — إهداء من النجم للأحياء</title>
+<style>
+:root {
+  --a-color: #e53e3e;
+  --a-bg: #fff5f5;
+  --a-border: #feb2b2;
+  --b-color: #dd6b20;
+  --b-bg: #fffaf0;
+  --b-border: #fbd38d;
+  --c-color: #d69e2e;
+  --c-bg: #fffff0;
+  --c-border: #f6e05e;
+  --d-color: #38a169;
+  --d-bg: #f0fff4;
+  --d-border: #9ae6b4;
+  --primary: #0d9e6e;
+  --primary-dark: #07694a;
+  --gold: #c8961a;
+  --navy: #0f2744;
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --text: #1a202c;
+  --text2: #4a5568;
+  --text3: #718096;
+  --border: #e2e8f0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 15px;
+  min-height: 100vh;
+  direction: rtl;
+}
+
+/* ===== Header ===== */
+header {
+  background: linear-gradient(135deg, var(--navy) 0%, #1a3d6e 60%, #1e5799 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 14px;
+  margin-bottom: 15px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(15,39,68,0.3);
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '❤️';
+  position: absolute;
+  font-size: 100px;
+  opacity: 0.05;
+  top: -20px;
+  right: -20px;
+}
+header h1 { font-size: 22px; margin-bottom: 5px; position: relative; }
+header p { opacity: 0.85; font-size: 13px; margin-bottom: 10px; position: relative; }
+.dedication {
+  display: inline-block;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  color: #5ee8b4;
+  font-weight: 600;
+  position: relative;
+}
+.dedication span { color: #fff; }
+
+/* ===== Filter ===== */
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+.filter-btn {
+  padding: 7px 14px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.filter-btn:hover { transform: translateY(-1px); }
+.filter-btn.active { color: white; border-color: transparent; }
+.filter-btn[data-filter="all"].active { background: var(--text); }
+.filter-btn[data-filter="A"].active { background: var(--a-color); }
+.filter-btn[data-filter="B"].active { background: var(--b-color); }
+.filter-btn[data-filter="C"].active { background: var(--c-color); color: #1a1a2e; }
+.filter-btn[data-filter="D"].active { background: var(--d-color); }
+
+/* ===== Weeks Grid ===== */
+.weeks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+.week-box {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.week-header {
+  background: linear-gradient(135deg, #f7fafc, #edf2f7);
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.week-header h3 {
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 700;
+}
+.week-header .count {
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-weight: 600;
+}
+
+/* ===== Days ===== */
+.day-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f7fafc;
+  gap: 8px;
+  min-height: 40px;
+}
+.day-row:last-child { border-bottom: none; }
+.day-label {
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 600;
+  min-width: 55px;
+  padding-top: 4px;
+}
+.day-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+  min-height: 26px;
+  align-items: flex-start;
+}
+.day-add-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-weight: bold;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.day-add-btn:hover {
+  background: var(--primary-dark);
+  transform: scale(1.1);
+}
+
+/* ===== Card ===== */
+.card {
+  padding: 5px 9px;
+  border-radius: 7px;
+  color: white;
+  font-weight: bold;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  user-select: none;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+.card.type-A { background: var(--a-color); }
+.card.type-A.fresh { background: #3182ce; } /* مذاكرة جديدة في آخر أسبوع: ليست متأخرة بعد */
+.card.type-B { background: var(--b-color); }
+.card.type-C { background: var(--c-color); color: #1a1a2e; }
+.card.type-D { background: var(--d-color); }
+
+.card .card-actions {
+  display: none;
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  gap: 2px;
+}
+.card:hover .card-actions {
+  display: flex;
+}
+.card .card-btn {
+  background: #2d3748;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+  font-weight: bold;
+}
+.card .card-btn.delete {
+  background: #c53030;
+}
+.card .card-btn.delete:hover {
+  background: #9b2c2c;
+}
+.card .card-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== Empty Week ===== */
+.empty-week {
+  color: var(--text3);
+  font-size: 11px;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white;
+  border-radius: 14px;
+  padding: 22px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.modal h3 {
+  margin-bottom: 15px;
+  color: var(--text);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal label {
+  display: block;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 5px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+.modal input, .modal select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #f7fafc;
+  color: var(--text);
+}
+.modal input:focus, .modal select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(13,158,110,0.1);
+}
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+/* ===== Buttons ===== */
+button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+button:hover { background: var(--primary-dark); }
+button.danger { background: #e53e3e; }
+button.danger:hover { background: #c53030; }
+button.success { background: #38a169; }
+button.success:hover { background: #2f855a; }
+button.secondary {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+button.secondary:hover { background: #f7fafc; }
+
+/* ===== Controls ===== */
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2d3748;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 50px;
+  font-size: 13px;
+  z-index: 9999;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  animation: toastIn 0.3s ease;
+  font-family: inherit;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ===== Footer ===== */
+.footer {
+  text-align: center;
+  color: var(--text3);
+  font-size: 12px;
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+.footer strong { color: var(--primary); }
+
+/* ===== View Mode (read-only) ===== */
+.view-banner {
+  display: none;
+  background: #ebf8ff;
+  border: 1px solid #90cdf4;
+  color: #2a4365;
+  border-radius: 12px;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.8;
+}
+.view-banner a { color: var(--primary-dark); cursor: pointer; text-decoration: underline; }
+body.view-mode .view-banner { display: block; }
+body.view-mode .day-add-btn,
+body.view-mode .card-actions,
+body.view-mode .controls { display: none !important; }
+body.view-mode .card { cursor: default; }
+body.view-mode .card:hover { transform: none; box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
+.share-note { font-size: 12px; color: var(--text3); margin-top: 10px; line-height: 1.8; }
+button.whatsapp { background: #25d366; }
+button.whatsapp:hover { background: #1da851; }
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .weeks-grid { grid-template-columns: 1fr; }
+  header h1 { font-size: 18px; }
+  .day-label { min-width: 45px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 نظام بطاقات المذاكرة</h1>
+  <p>أضف بطاقات لكل يوم — وارتقِ بها مع كل مراجعة</p>
+  <div class="dedication">
+    🎁 إهداء من <span>النجم للأحياء</span> — أ. عزت نجم • 77107247
+  </div>
+</header>
+
+<div class="view-banner" id="viewBanner">
+  👀 وضع المشاهدة فقط — هذه نسخة من جدول الطالب <span id="viewDate"></span><br>
+  <a onclick="exitViewMode()">فتح نسختي الخاصة</a>
+</div>
+
+<!-- ===== Filter ===== -->
+<div class="filter-bar">
+  <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">الكل</button>
+  <button class="filter-btn" data-filter="A" onclick="setFilter('A')">🔴 A — المذاكرة الأولى</button>
+  <button class="filter-btn" data-filter="B" onclick="setFilter('B')">🟠 B — الثانية</button>
+  <button class="filter-btn" data-filter="C" onclick="setFilter('C')">🟡 C — الثالثة</button>
+  <button class="filter-btn" data-filter="D" onclick="setFilter('D')">🟢 D — الرابعة</button>
+</div>
+
+<!-- ===== Weeks Grid ===== -->
+<div class="weeks-grid" id="weeksGrid"></div>
+
+<!-- ===== Controls ===== -->
+<div class="controls">
+  <button onclick="openShareModal()" class="success">🔗 مشاركة للمتابعة (ولي الأمر / المعلم)</button>
+  <button onclick="clearAll()" class="danger">🗑️ حذف كل البطاقات</button>
+</div>
+
+<div class="footer">
+  🎁 <strong>إهداء من النجم للأحياء</strong> — أ. عزت نجم • 📞 77107247
+</div>
+
+<!-- ===== Modal: Add Card ===== -->
+<div class="modal-overlay" id="cardModal">
+  <div class="modal">
+    <h3 id="modalTitle">➕ إضافة بطاقة</h3>
+    
+    <label>📚 المادة</label>
+    <select id="cardSubject" onchange="suggestNextType()">
+      <option value="ك">كيمياء (ك)</option>
+      <option value="ح">أحياء (ح)</option>
+      <option value="ف">فيزياء (ف)</option>
+      <option value="ش">شرعية (ش)</option>
+      <option value="ر">رياضيات (ر)</option>
+      <option value="س">حاسوب (س)</option>
+      <option value="ع">عربي (ع)</option>
+      <option value="إ">إنجليزي (إ)</option>
+    </select>
+    
+    <label>📖 رقم المحاضرة (1 - 13)</label>
+    <input type="number" id="cardNum" value="1" min="1" max="13" oninput="suggestNextType()">
+
+    <label>🔁 رقم المذاكرة</label>
+    <select id="cardType">
+      <option value="A">A — المذاكرة الأولى</option>
+      <option value="B">B — المذاكرة الثانية</option>
+      <option value="C">C — المذاكرة الثالثة</option>
+      <option value="D">D — المذاكرة الرابعة</option>
+    </select>
+    
+    <div class="modal-buttons">
+      <button onclick="closeModal()" class="secondary">إلغاء</button>
+      <button onclick="saveCard()" class="success">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: Share ===== -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal">
+    <h3>🔗 رابط المتابعة (مشاهدة فقط)</h3>
+    <label>أرسل هذا الرابط لولي الأمر أو المعلم</label>
+    <input type="text" id="shareLink" readonly onclick="this.select()">
+    <p class="share-note">
+      من يفتح الرابط يرى جدولك كما هو الآن ولا يستطيع تعديله.<br>
+      بعد أي تعديل جديد، أعد إرسال الرابط ليرى آخر نسخة.
+    </p>
+    <div class="modal-buttons">
+      <button onclick="closeShareModal()" class="secondary">إغلاق</button>
+      <button onclick="copyShareLink()" class="secondary">📋 نسخ</button>
+      <button onclick="shareWhatsApp()" class="whatsapp">واتساب</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// CONFIG
+// ================================================================
+const SUBJECTS = {
+  'ك': 'كيمياء',
+  'ح': 'أحياء',
+  'ف': 'فيزياء',
+  'ش': 'شرعية',
+  'ر': 'رياضيات',
+  'س': 'حاسوب',
+  'ع': 'عربي',
+  'إ': 'إنجليزي'
+};
+
+const NUM_WEEKS = 13;
+const DAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+const TYPES = ['A', 'B', 'C', 'D'];
+
+// ================================================================
+// STATE
+// ================================================================
+let state = {
+  // weeks[weekNum][dayIndex] = [{ subject, num, type }]
+  weeks: {},
+  filter: 'all'
+};
+
+// وضع المشاهدة: يُفعَّل عندما يفتح أحد رابط المشاركة (#v=...)
+let viewMode = false;
+let viewTimestamp = null;
+const SUBJECT_KEYS = Object.keys(SUBJECTS);
+
+// ================================================================
+// STORAGE
+// ================================================================
+function loadState() {
+  viewMode = false;
+  const shared = readSharedHash();
+  if (shared) {
+    viewMode = true;
+    state.weeks = shared.weeks;
+    viewTimestamp = shared.t;
+  }
+  const saved = viewMode ? null : localStorage.getItem('studyCards_v5');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      state.weeks = parsed.weeks || {};
+    } catch(e) { console.error(e); }
+  }
+  // تأكد إن كل الأسابيع والأيام موجودة
+  for (let w = 1; w <= NUM_WEEKS; w++) {
+    if (!state.weeks[w]) state.weeks[w] = {};
+    for (let d = 0; d < 7; d++) {
+      if (!state.weeks[w][d]) state.weeks[w][d] = [];
+    }
+  }
+}
+function saveState() {
+  if (viewMode) return; // المشاهد لا يكتب فوق بياناته ولا يعدّل شيئًا
+  localStorage.setItem('studyCards_v5', JSON.stringify({
+    weeks: state.weeks
+  }));
+}
+
+// ================================================================
+// MODAL
+// ================================================================
+let currentModalWeek = 1;
+let currentModalDay = 0;
+
+function openAddModal(weekNum, dayIndex) {
+  if (viewMode) return;
+  currentModalWeek = weekNum;
+  currentModalDay = dayIndex;
+  document.getElementById('modalTitle').textContent = 
+    `➕ إضافة بطاقة — الأسبوع ${weekNum} / ${DAYS[dayIndex]}`;
+  document.getElementById('cardSubject').value = 'ك';
+  document.getElementById('cardNum').value = 1;
+  suggestNextType();
+  document.getElementById('cardModal').classList.add('show');
+  setTimeout(() => document.getElementById('cardNum').focus(), 100);
+}
+
+// اقتراح المرحلة التالية تلقائياً: أول مرة A، ثم B، ثم C، ثم D (يمكن تغييرها يدوياً)
+function suggestNextType() {
+  const subject = document.getElementById('cardSubject').value;
+  const num = parseInt(document.getElementById('cardNum').value);
+  if (!num) return;
+  const h = computeHighestTypes()[subject + num];
+  const next = h === undefined ? 0 : Math.min(h + 1, TYPES.length - 1);
+  document.getElementById('cardType').value = TYPES[next];
+}
+
+function closeModal() {
+  document.getElementById('cardModal').classList.remove('show');
+}
+
+function saveCard() {
+  if (viewMode) return;
+  const subject = document.getElementById('cardSubject').value;
+  const num = parseInt(document.getElementById('cardNum').value) || 1;
+  const type = document.getElementById('cardType').value;
+
+  if (num < 1 || num > 13) {
+    showToast('⚠️ رقم المحاضرة يجب أن يكون بين 1 و 13');
+    return;
+  }
+
+  state.weeks[currentModalWeek][currentModalDay].push({
+    subject,
+    num,
+    type
+  });
+
+  saveState();
+  closeModal();
+  renderAll();
+  showToast(`✅ تمت إضافة ${subject}${num} ${type} — الأسبوع ${currentModalWeek} / ${DAYS[currentModalDay]}`);
+}
+
+// ================================================================
+// DELETE
+// ================================================================
+function deleteCard(weekNum, dayIndex, cardIndex) {
+  if (viewMode) return;
+  if (!confirm('هل تريد حذف هذه البطاقة؟')) return;
+  state.weeks[weekNum][dayIndex].splice(cardIndex, 1);
+  saveState();
+  renderAll();
+  showToast('🗑️ تم حذف البطاقة');
+}
+
+// ================================================================
+// FILTER
+// ================================================================
+function setFilter(filter) {
+  state.filter = filter;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  renderAll();
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+function renderAll() {
+  renderWeeks();
+}
+
+// أعلى مرحلة وصلت لها كل محاضرة (مادة + رقم) عبر كل الأسابيع
+function computeHighestTypes() {
+  const highest = {};
+  for (let w = 1; w <= NUM_WEEKS; w++) {
+    for (let d = 0; d < 7; d++) {
+      state.weeks[w][d].forEach(c => {
+        const key = c.subject + c.num;
+        const lvl = TYPES.indexOf(c.type);
+        if (highest[key] === undefined || lvl > highest[key]) highest[key] = lvl;
+      });
+    }
+  }
+  return highest;
+}
+
+// آخر أسبوع فيه بطاقات: بطاقات A فيه تُعرض بلون هادئ لأنها لم تتأخر بعد
+let latestWeekUsed = 0;
+function computeLatestWeek() {
+  let latest = 0;
+  for (let w = 1; w <= NUM_WEEKS; w++) {
+    for (let d = 0; d < 7; d++) {
+      if (state.weeks[w][d].length) latest = w;
+    }
+  }
+  return latest;
+}
+
+function renderWeeks() {
+  const grid = document.getElementById('weeksGrid');
+  grid.innerHTML = '';
+  const highest = computeHighestTypes();
+  latestWeekUsed = computeLatestWeek();
+
+  for (let w = 1; w <= NUM_WEEKS; w++) {
+    // اجمع كل البطاقات في الأسبوع
+    const weekCards = [];
+    for (let d = 0; d < 7; d++) {
+      state.weeks[w][d].forEach((card, idx) => {
+        weekCards.push({ card, day: d, cardIdx: idx });
+      });
+    }
+
+    // فلترة
+    let displayWeekCards = weekCards;
+    if (state.filter !== 'all') {
+      displayWeekCards = weekCards.filter(item =>
+        item.card.type === state.filter &&
+        highest[item.card.subject + item.card.num] === TYPES.indexOf(item.card.type)
+      );
+    }
+
+    // الطالب يرى كل الأسابيع ليتمكن من الإضافة؛ المشاهد لا يرى الأسابيع الفارغة
+    if (viewMode && displayWeekCards.length === 0) continue;
+
+    // ترتيب: A أولاً، بعدين B، بعدين C، بعدين D
+    displayWeekCards.sort((a, b) => {
+      const typeOrder = { A: 0, B: 1, C: 2, D: 3 };
+      return typeOrder[a.card.type] - typeOrder[b.card.type];
+    });
+
+    // لو الفلتر "الكل"، نعرض كل الأيام عادي
+    // لو فلتر معين، نعرض البطاقات المفلترة موزعة على الأيام
+
+    const box = document.createElement('div');
+    box.className = 'week-box';
+
+    let daysHtml = '';
+    for (let d = 0; d < 7; d++) {
+      let dayCards;
+      if (state.filter === 'all') {
+        dayCards = state.weeks[w][d];
+      } else {
+        dayCards = displayWeekCards
+          .filter(item => item.day === d)
+          .map(item => item.card);
+      }
+
+      const cardsHtml = dayCards.length === 0
+        ? '<span class="empty-week">—</span>'
+        : dayCards.map((card, idx) => {
+            // لو الفلتر "الكل"، الـ index الأصلي = idx
+            // لو فلتر، الـ index الأصلي لازم نجيبه من weekCards
+            let originalIdx = idx;
+            if (state.filter !== 'all') {
+              originalIdx = state.weeks[w][d].indexOf(card);
+            }
+            return createCardHtml(card, w, d, originalIdx);
+          }).join('');
+
+      daysHtml += `
+        <div class="day-row">
+          <div class="day-label">${DAYS[d]}</div>
+          <div class="day-cards">${cardsHtml}</div>
+          <button class="day-add-btn" onclick="openAddModal(${w}, ${d})" title="إضافة بطاقة">+</button>
+        </div>
+      `;
+    }
+
+    box.innerHTML = `
+      <div class="week-header">
+        <h3>📅 الأسبوع ${w}</h3>
+        <span class="count">${displayWeekCards.length} بطاقة</span>
+      </div>
+      ${daysHtml}
+    `;
+
+    grid.appendChild(box);
+  }
+
+  if (grid.children.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);">
+      <div style="font-size:48px;margin-bottom:10px;">🔍</div>
+      <div>لا توجد بطاقات مطابقة للفلتر المحدد</div>
+    </div>`;
+  }
+}
+
+function createCardHtml(card, weekNum, dayIndex, cardIndex) {
+  return `
+    <div class="card type-${card.type}${card.type === 'A' && weekNum === latestWeekUsed ? ' fresh' : ''}" title="${SUBJECTS[card.subject] || card.subject} - محاضرة ${card.num} - التكرار ${card.type}${card.type === 'A' && weekNum === latestWeekUsed ? ' (جديدة)' : ''}">
+      <span>${card.subject}${card.num} ${card.type}</span>
+      <div class="card-actions">
+        <button class="card-btn delete" 
+                onclick="event.stopPropagation(); deleteCard(${weekNum}, ${dayIndex}, ${cardIndex})" 
+                title="حذف">×</button>
+      </div>
+    </div>
+  `;
+}
+
+// ================================================================
+// CLEAR ALL
+// ================================================================
+function clearAll() {
+  if (viewMode) return;
+  if (!confirm('⚠️ سيتم حذف كل البطاقات نهائياً. متأكد؟')) return;
+  state.weeks = {};
+  for (let w = 1; w <= NUM_WEEKS; w++) {
+    state.weeks[w] = {};
+    for (let d = 0; d < 7; d++) {
+      state.weeks[w][d] = [];
+    }
+  }
+  saveState();
+  renderAll();
+  showToast('🗑️ تم حذف كل البطاقات');
+}
+
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transition = 'opacity 0.3s';
+    setTimeout(() => t.remove(), 300);
+  }, 2000);
+}
+
+// ================================================================
+// SHARE (read-only link)
+// ================================================================
+function encodeShare() {
+  const parts = [];
+  for (let w = 1; w <= NUM_WEEKS; w++) {
+    for (let d = 0; d < 7; d++) {
+      state.weeks[w][d].forEach(c => {
+        const si = SUBJECT_KEYS.indexOf(c.subject);
+        if (si === -1) return;
+        parts.push([w, d, si, c.num, c.type].join(','));
+      });
+    }
+  }
+  // النص كله ASCII، فـ btoa كافية. نحوله لصيغة آمنة للروابط.
+  return btoa(parts.join(';')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function decodeShare(str) {
+  const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
+  const weeks = {};
+  for (let w = 1; w <= NUM_WEEKS; w++) {
+    weeks[w] = {};
+    for (let d = 0; d < 7; d++) weeks[w][d] = [];
+  }
+  if (!raw) return weeks;
+  raw.split(';').forEach(item => {
+    const [w, d, si, num, type] = item.split(',');
+    const wi = parseInt(w), di = parseInt(d), sidx = parseInt(si), n = parseInt(num);
+    if (wi >= 1 && wi <= NUM_WEEKS && di >= 0 && di < 7 &&
+        SUBJECT_KEYS[sidx] && n >= 1 && n <= 13 && TYPES.includes(type)) {
+      weeks[wi][di].push({ subject: SUBJECT_KEYS[sidx], num: n, type });
+    }
+  });
+  return weeks;
+}
+
+function readSharedHash() {
+  if (!location.hash.startsWith('#v=')) return null;
+  try {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const weeks = decodeShare(params.get('v') || '');
+    const t = parseInt(params.get('t')) || null;
+    return { weeks, t };
+  } catch (e) {
+    console.error('رابط غير صالح', e);
+    return null;
+  }
+}
+
+function buildShareLink() {
+  const base = location.href.split('#')[0];
+  return `${base}#v=${encodeShare()}&t=${Date.now()}`;
+}
+
+function openShareModal() {
+  if (viewMode) return;
+  document.getElementById('shareLink').value = buildShareLink();
+  document.getElementById('shareModal').classList.add('show');
+}
+
+function closeShareModal() {
+  document.getElementById('shareModal').classList.remove('show');
+}
+
+function copyShareLink() {
+  const input = document.getElementById('shareLink');
+  const done = () => showToast('📋 تم نسخ الرابط');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(input.value).then(done, () => { input.select(); document.execCommand('copy'); done(); });
+  } else {
+    input.select();
+    document.execCommand('copy');
+    done();
+  }
+}
+
+function shareWhatsApp() {
+  const link = document.getElementById('shareLink').value;
+  const msg = '📚 جدول مذاكرتي (مشاهدة فقط):\n' + link;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function exitViewMode() {
+  location.href = location.href.split('#')[0];
+}
+
+window.addEventListener('hashchange', () => location.reload());
+
+// ================================================================
+// INIT
+// ================================================================
+function init() {
+  loadState();
+  if (viewMode) {
+    document.body.classList.add('view-mode');
+    if (viewTimestamp) {
+      document.getElementById('viewDate').textContent =
+        '(آخر تحديث: ' + new Date(viewTimestamp).toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' }) + ')';
+    }
+  }
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
