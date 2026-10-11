@@ -530,13 +530,17 @@ body.view-mode .week-del { display: none !important; }
 <!-- ===== شاشة اختيار الوضع ===== -->
 <div id="landingView" class="landing" style="display:none">
   <h2>اختر نوع الدراسة</h2>
+  <button class="mode-btn" onclick="chooseMode('school')">
+    🏫 لثانوية قطر — الفصل الأول
+    <small>13 أسبوعًا و13 محاضرة، ومواد الثانوية جاهزة (أحياء، كيمياء، فيزياء ...) مع 4 مرات تكرار</small>
+  </button>
+  <button class="mode-btn" onclick="chooseMode('school2')">
+    🏫 لثانوية قطر — الفصل الثاني
+    <small>17 أسبوعًا و17 محاضرة، بنفس المواد و4 مرات تكرار</small>
+  </button>
   <button class="mode-btn" onclick="chooseMode('uni')">
     🎓 للجامعة
     <small>تحدد عدد الأسابيع وأسماء المواد وعدد مرات التكرار، ويمكنك زيادة الأسابيع أو حذفها في أي وقت</small>
-  </button>
-  <button class="mode-btn" onclick="chooseMode('school')">
-    🏫 لثانوية قطر — الفصل الأول
-    <small>13 أسبوعًا ومواد الثانوية جاهزة (كيمياء، أحياء، فيزياء ...) مع 4 مرات تكرار</small>
   </button>
 </div>
 
@@ -647,7 +651,8 @@ body.view-mode .week-del { display: none !important; }
 // ================================================================
 const STORE = {
   mode:   'studyCards_mode_v1',
-  school: 'studyCards_v5',          // نفس المفتاح القديم: بيانات الثانوية القديمة تبقى كما هي
+  school: 'studyCards_v5',          // الفصل الأول — نفس المفتاح القديم: البيانات القديمة تبقى كما هي
+  school2: 'studyCards_school2_v1', // الفصل الثاني
   uni:    'studyCards_uni_v1',
   uniCfg: 'studyCards_uni_cfg_v1'
 };
@@ -694,6 +699,7 @@ let SUBJECTS = {};
 let SUBJECT_CODES = {};
 let SUBJECT_KEYS = [];
 let uniCfg = null;               // {numWeeks, repeats, subjects:[{id,name,code}], nextId}
+let DEFAULT_SUBJECT = 'ح';       // المادة الافتراضية (أحياء) في الثانوية
 
 const subjCode = k => SUBJECT_CODES[k] || k;
 const lecKey = (subject, num) => subject + '|' + num;
@@ -734,10 +740,12 @@ function applyConfig(m, cfg) {
   } else {
     SCHOOL_SUBJECTS.forEach(([k, n, c]) => { SUBJECTS[k] = n; SUBJECT_CODES[k] = c; });
     TYPES = ALL_TYPES.slice(0, 4);
-    NUM_WEEKS = 13;
-    MAX_LECTURE = 13;
+    NUM_WEEKS = (m === 'school2') ? 17 : 13;
+    MAX_LECTURE = NUM_WEEKS;
   }
   SUBJECT_KEYS = Object.keys(SUBJECTS);
+  // المادة الافتراضية: أحياء في الثانوية، وأول مادة في الجامعة
+  DEFAULT_SUBJECT = (m === 'uni') ? SUBJECT_KEYS[0] : 'ح';
 }
 
 // ================================================================
@@ -756,7 +764,7 @@ let viewTimestamp = null;
 // ================================================================
 // STORAGE
 // ================================================================
-const dataKey = () => (mode === 'uni' ? STORE.uni : STORE.school);
+const dataKey = () => (mode === 'uni' ? STORE.uni : mode === 'school2' ? STORE.school2 : STORE.school);
 
 function ensureWeeks() {
   for (let w = 1; w <= NUM_WEEKS; w++) {
@@ -808,7 +816,7 @@ function chooseMode(m) {
     if (loadUniCfg()) startApp('uni');
     else openSetup();
   } else {
-    startApp('school');
+    startApp(m);   // 'school' = الفصل الأول، 'school2' = الفصل الثاني
   }
 }
 
@@ -846,14 +854,14 @@ function buildUi() {
   document.getElementById('cardType').innerHTML =
     TYPES.map((t, i) => `<option value="${t}">${t} — ${TYPE_NAMES[i]}</option>`).join('');
   document.getElementById('cardSubject').innerHTML =
-    SUBJECT_KEYS.map(k => `<option value="${esc(k)}">${esc(SUBJECTS[k])} (${esc(SUBJECT_CODES[k])})</option>`).join('');
+    [DEFAULT_SUBJECT].concat(SUBJECT_KEYS.filter(k => k !== DEFAULT_SUBJECT)).map(k => `<option value="${esc(k)}">${esc(SUBJECTS[k])} (${esc(SUBJECT_CODES[k])})</option>`).join('');
   document.getElementById('lectureLabel').textContent = `📖 رقم المحاضرة (1 - ${MAX_LECTURE})`;
   document.getElementById('cardNum').max = MAX_LECTURE;
 
   // شارة الوضع + عناصر الجامعة
   document.getElementById('modeBadge').textContent = mode === 'uni'
     ? `🎓 الجامعة — ${NUM_WEEKS} أسبوع • ${TYPES.length} مرات تكرار`
-    : '🏫 ثانوية قطر — الفصل الأول';
+    : (mode === 'school2' ? '🏫 ثانوية قطر — الفصل الثاني' : '🏫 ثانوية قطر — الفصل الأول');
   document.querySelectorAll('.uni-only').forEach(el => { el.style.display = mode === 'uni' ? '' : 'none'; });
 }
 
@@ -1007,7 +1015,7 @@ function openAddModal(weekNum, dayIndex) {
   currentModalDay = dayIndex;
   document.getElementById('modalTitle').textContent =
     `➕ إضافة بطاقة — الأسبوع ${weekNum} / ${DAYS[dayIndex]}`;
-  document.getElementById('cardSubject').value = SUBJECT_KEYS[0];
+  document.getElementById('cardSubject').value = DEFAULT_SUBJECT;
   document.getElementById('cardNum').value = 1;
   suggestNextType();
   document.getElementById('cardModal').classList.add('show');
@@ -1291,7 +1299,8 @@ function readSharedHash() {
   if (!location.hash.startsWith('#v=')) return null;
   try {
     const params = new URLSearchParams(location.hash.slice(1));
-    const m = params.get('m') === 'uni' ? 'uni' : 'school';
+    const mp = params.get('m');
+    const m = (mp === 'uni' || mp === 'school2') ? mp : 'school';
     let cfg = null;
     if (m === 'uni') {
       cfg = sanitizeCfg(JSON.parse(fromB64u(params.get('c') || '')));
@@ -1314,6 +1323,8 @@ function buildShareLink() {
   if (mode === 'uni') {
     const c = { numWeeks: uniCfg.numWeeks, repeats: uniCfg.repeats, subjects: uniCfg.subjects };
     extra = `&m=uni&c=${toB64u(JSON.stringify(c))}`;
+  } else if (mode === 'school2') {
+    extra = '&m=school2';
   }
   return `${base}#v=${encodeShare()}&t=${Date.now()}${extra}`;
 }
@@ -1377,6 +1388,8 @@ function init() {
   const saved = localStorage.getItem(STORE.mode);
   if (saved === 'uni' && loadUniCfg()) {
     startApp('uni');
+  } else if (saved === 'school2') {
+    startApp('school2');
   } else if (saved === 'school' || (!saved && localStorage.getItem(STORE.school))) {
     // من كان يستخدم النسخة القديمة (ثانوية) يدخل مباشرة على بياناته
     startApp('school');
